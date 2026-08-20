@@ -22,7 +22,7 @@ import * as Accordion from "@radix-ui/react-accordion";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { motion } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
 import { toast } from "sonner";
 import {
   buildRequestMessage,
@@ -37,9 +37,15 @@ import {
   type ServiceId,
 } from "./data/estimatedPricing";
 import {
+  AnimatedServiceCard,
+  AtelierHeroScene,
   ContinuousThread,
   FabricFoldTransition,
   GarmentVisualizer,
+  MagneticActionButton,
+  MotionReveal,
+  ReducedMotionFallback,
+  TailoringProcessTimeline,
 } from "./components/Visuals";
 const PHONE = "+48 884 388 085",
   WA = "https://wa.me/48884388085",
@@ -149,14 +155,33 @@ function Hero() {
   const { t } = useTranslation();
   return (
     <section className="hero" id="top">
-      <div className="hero-copy">
+      <motion.div
+        className="hero-copy"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.35 }}
+      >
         <p className="eyebrow">{t("hero.eyebrow")}</p>
-        <h1>{t("hero.title")}</h1>
+        <motion.h1
+          className="fabric-reveal"
+          initial={{ clipPath: "inset(0 100% 0 0)" }}
+          animate={{ clipPath: "inset(0)" }}
+          transition={{ delay: 1.15, duration: 0.7 }}
+        >
+          {t("hero.title")}
+        </motion.h1>
         <p className="lead">{t("hero.text")}</p>
-        <div className="actions">
+        <motion.div
+          className="actions"
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 1.65, duration: 0.45 }}
+        >
           <a className="button" href="#calculator">
-            {t("hero.cta")}
-            <ArrowRight />
+            <MagneticActionButton className="button-inner">
+              {t("hero.cta")}
+              <ArrowRight />
+            </MagneticActionButton>
           </a>
           <a
             className="icon-link"
@@ -174,26 +199,15 @@ function Hero() {
           >
             Telegram
           </a>
-        </div>
+        </motion.div>
         <div className="trust">
           <strong>{t("hero.rating")}</strong>
           <span>{t("hero.reviews")}</span>
           <span>Narbutta 11/2a</span>
           <span>Mokotów</span>
         </div>
-      </div>
-      <div className="hero-art">
-        <div className="pattern-label">LENOK / FORM 01</div>
-        <GarmentVisualizer garment="dress" services={["shortening"]} />
-        <svg className="hero-stitch" viewBox="0 0 400 400" aria-hidden="true">
-          <motion.path
-            d="M20 330 C110 300 40 80 210 55 S350 160 260 330"
-            initial={{ pathLength: 0 }}
-            animate={{ pathLength: 1 }}
-            transition={{ duration: 2.4 }}
-          />
-        </svg>
-      </div>
+      </motion.div>
+      <AtelierHeroScene />
     </section>
   );
 }
@@ -272,17 +286,26 @@ function Calculator() {
         <p>{t("garments.hint")}</p>
       </div>
       <div className="garment-grid">
-        {garments.map((g) => (
-          <button
+        {garments.map((g, index) => (
+          <motion.button
             key={g}
             className={garment === g ? "garment-card selected" : "garment-card"}
             onClick={() => selectGarment(g)}
             aria-pressed={garment === g}
+            animate={{
+              opacity: garment && garment !== g ? 0.5 : 1,
+              scale: garment === g ? 1.035 : garment ? 0.97 : 1,
+              y: garment === g ? -8 : 0,
+            }}
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            whileHover={{ rotate: index % 2 ? 0.7 : -0.7, y: -5 }}
+            transition={{ delay: index * 0.07, type: "spring", damping: 18 }}
           >
-            <GarmentVisualizer garment={g} />
+            <GarmentVisualizer garment={g} label={t(`garments.${g}`)} />
             <span>{t(`garments.${g}`)}</span>
             {garment === g && <Check />}
-          </button>
+          </motion.button>
         ))}
       </div>
       {garment && (
@@ -294,18 +317,24 @@ function Calculator() {
                 const price = getServicePrice(garment, s),
                   disabled = !available.includes(s);
                 return (
-                  <button
+                  <AnimatedServiceCard
                     key={s}
-                    role="checkbox"
-                    aria-checked={selected.includes(s)}
                     disabled={disabled}
                     onClick={() => toggle(s)}
-                    className={
-                      selected.includes(s) ? "service selected" : "service"
-                    }
+                    selected={selected.includes(s)}
                   >
                     <span className="check">
-                      {selected.includes(s) && <Check />}
+                      <AnimatePresence>
+                        {selected.includes(s) && (
+                          <motion.span
+                            initial={{ scale: 0, rotate: -35 }}
+                            animate={{ scale: 1, rotate: 0 }}
+                            exit={{ scale: 0 }}
+                          >
+                            <Check />
+                          </motion.span>
+                        )}
+                      </AnimatePresence>
                     </span>
                     <span>
                       <strong>{t(`services.${s}`)}</strong>
@@ -315,7 +344,7 @@ function Calculator() {
                           : `${t("calc.from")} ${formatPrice(price, i18n.language)}`}
                       </small>
                     </span>
-                  </button>
+                  </AnimatedServiceCard>
                 );
               })}
             </div>
@@ -326,25 +355,33 @@ function Calculator() {
             {!selected.length ? (
               <p>{t("calc.empty")}</p>
             ) : (
-              <ul>
-                {selected.map((s) => (
-                  <li key={s}>
-                    <span>{t(`services.${s}`)}</span>
-                    <strong>
-                      {formatPrice(
-                        getServicePrice(garment, s) ?? 0,
-                        i18n.language,
-                      )}
-                    </strong>
-                    <button
-                      aria-label={`Remove ${t(`services.${s}`)}`}
-                      onClick={() => toggle(s)}
+              <motion.ul layout>
+                <AnimatePresence initial={false}>
+                  {selected.map((s) => (
+                    <motion.li
+                      key={s}
+                      initial={{ opacity: 0, x: 18, height: 0 }}
+                      animate={{ opacity: 1, x: 0, height: "auto" }}
+                      exit={{ opacity: 0, x: -18, height: 0 }}
+                      layout
                     >
-                      <X />
-                    </button>
-                  </li>
-                ))}
-              </ul>
+                      <span>{t(`services.${s}`)}</span>
+                      <strong>
+                        {formatPrice(
+                          getServicePrice(garment, s) ?? 0,
+                          i18n.language,
+                        )}
+                      </strong>
+                      <button
+                        aria-label={`Remove ${t(`services.${s}`)}`}
+                        onClick={() => toggle(s)}
+                      >
+                        <X />
+                      </button>
+                    </motion.li>
+                  ))}
+                </AnimatePresence>
+              </motion.ul>
             )}
             <div className="total">
               <span>{t("calc.total")}</span>
@@ -406,10 +443,17 @@ function Calculator() {
                   Telegram
                 </label>
               </fieldset>
-              <button className="button full" type="submit">
+              <motion.button
+                className="button full"
+                type="submit"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: selected.length ? 1 : 0.55, y: 0 }}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
                 {t("calc.send")}
                 <ArrowRight />
-              </button>
+              </motion.button>
             </form>
             {manual && (
               <div className="manual">
@@ -443,106 +487,129 @@ function Home() {
         {t("a11y.skip")}
       </a>
       <Header />
-      <main id="main">
-        <ContinuousThread />
-        <Hero />
-        <Calculator />
-        <FabricFoldTransition />
-        <section className="atelier" id="services">
-          <div>
-            <p className="eyebrow">{t("atelier.kicker")}</p>
-            <h2>{t("atelier.title")}</h2>
-            <p>{t("atelier.text")}</p>
-          </div>
-          <GarmentVisualizer
-            garment="blazer"
-            services={[
-              "waistAdjustment",
-              "sleeveShortening",
-              "liningReplacement",
-            ]}
-          />
-        </section>
-        <section className="process" id="process">
-          <p className="eyebrow">PATTERN / PROCESS</p>
-          <h2>{t("process.title")}</h2>
-          <div className="steps">
-            {steps.map((s, i) => (
-              <article key={s}>
-                <span>0{i + 1}</span>
-                <h3>{s}</h3>
-              </article>
-            ))}
-          </div>
-          <p>{t("process.note")}</p>
-        </section>
-        <section className="second">
-          <h2>{t("second.title")}</h2>
-          <p>{t("second.text")}</p>
-        </section>
-        <section className="reviews">
-          <div>
-            <strong>4.9 ★</strong>
-            <span>Google · {t("hero.reviews")}</span>
-          </div>
-          <a
-            className="button ghost"
-            href={MAP}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Google Maps
-            <ArrowRight />
-          </a>
-        </section>
-        <section className="faq">
-          <h2>{t("faq.title")}</h2>
-          <Accordion.Root type="single" collapsible>
-            {faqQ.map((q, i) => (
-              <Accordion.Item value={`q${i}`} key={q}>
-                <Accordion.Trigger>
-                  {q}
-                  <span>+</span>
-                </Accordion.Trigger>
-                <Accordion.Content>{faqA[i]}</Accordion.Content>
-              </Accordion.Item>
-            ))}
-          </Accordion.Root>
-        </section>
-        <section className="contact" id="contact">
-          <div>
-            <p className="eyebrow">NARBUTTA 11/2A</p>
-            <h2>{t("contact.title")}</h2>
-            <address>
-              <strong>LenOK Poprawki krawieckie</strong>
-              <span>{t("contact.address")}</span>
-              <a href="tel:+48884388085">{PHONE}</a>
-            </address>
-            <div className="actions">
-              <a
-                className="button"
-                href={MAP}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <MapPin />
-                {t("contact.open")}
-              </a>
-              <a href={WA} target="_blank" rel="noopener noreferrer">
-                WhatsApp
-              </a>
-              <a href={TG} target="_blank" rel="noopener noreferrer">
-                Telegram
-              </a>
+      <ReducedMotionFallback>
+        <main id="main">
+          <ContinuousThread />
+          <Hero />
+          <Calculator />
+          <FabricFoldTransition />
+          <section className="atelier" id="services">
+            <div className="atelier-chalk" aria-hidden="true">
+              <span />
+              <span />
+              <span />
             </div>
-          </div>
-          <iframe
-            title={t("common.maps")}
-            loading="lazy"
-            src="https://www.google.com/maps?q=Ludwika%20Narbutta%2011%2F2a%20Warszawa&output=embed"
+            <MotionReveal className="atelier-copy">
+              <p className="eyebrow">{t("atelier.kicker")}</p>
+              <h2>{t("atelier.title")}</h2>
+              <p>{t("atelier.text")}</p>
+            </MotionReveal>
+            <motion.div
+              className="atelier-mannequin"
+              whileInView={{ opacity: 1, y: 0 }}
+              initial={{ opacity: 0, y: 45 }}
+              transition={{ duration: 0.7 }}
+            >
+              <div className="mannequin-neck" />
+              <GarmentVisualizer
+                garment="blazer"
+                services={[
+                  "waistAdjustment",
+                  "sleeveShortening",
+                  "liningReplacement",
+                ]}
+              />
+              <div className="mannequin-stand" />
+            </motion.div>
+          </section>
+          <TailoringProcessTimeline
+            steps={steps}
+            note={t("process.note")}
+            title={t("process.title")}
           />
-        </section>
-      </main>
+          <section className="second">
+            <h2>{t("second.title")}</h2>
+            <p>{t("second.text")}</p>
+          </section>
+          <section className="reviews">
+            <div>
+              <strong>4.9 ★</strong>
+              <span>Google · {t("hero.reviews")}</span>
+            </div>
+            <a
+              className="button ghost"
+              href={MAP}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Google Maps
+              <ArrowRight />
+            </a>
+          </section>
+          <section className="faq">
+            <h2>{t("faq.title")}</h2>
+            <Accordion.Root type="single" collapsible>
+              {faqQ.map((q, i) => (
+                <Accordion.Item value={`q${i}`} key={q}>
+                  <Accordion.Trigger>
+                    {q}
+                    <span>+</span>
+                  </Accordion.Trigger>
+                  <Accordion.Content>{faqA[i]}</Accordion.Content>
+                </Accordion.Item>
+              ))}
+            </Accordion.Root>
+          </section>
+          <motion.section
+            className="contact"
+            id="contact"
+            initial={{ opacity: 0.65 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true, amount: 0.2 }}
+          >
+            <div>
+              <p className="eyebrow">NARBUTTA 11/2A</p>
+              <h2>{t("contact.title")}</h2>
+              <address>
+                <strong>LenOK Poprawki krawieckie</strong>
+                <span>{t("contact.address")}</span>
+                <a href="tel:+48884388085">{PHONE}</a>
+              </address>
+              <div className="actions">
+                <a
+                  className="button"
+                  href={MAP}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <MapPin />
+                  {t("contact.open")}
+                </a>
+                <a href={WA} target="_blank" rel="noopener noreferrer">
+                  WhatsApp
+                </a>
+                <a href={TG} target="_blank" rel="noopener noreferrer">
+                  Telegram
+                </a>
+              </div>
+            </div>
+            <iframe
+              title={t("common.maps")}
+              loading="lazy"
+              src="https://www.google.com/maps?q=Ludwika%20Narbutta%2011%2F2a%20Warszawa&output=embed"
+            />
+            <svg className="final-knot" viewBox="0 0 120 80" aria-hidden="true">
+              <motion.path
+                d="M4 44C33 8 84 74 56 43C38 23 80 15 91 43C99 64 74 67 70 49C67 34 103 27 116 42"
+                initial={{ pathLength: 0 }}
+                whileInView={{ pathLength: 1 }}
+                viewport={{ once: true }}
+                transition={{ duration: 1.2 }}
+              />
+            </svg>
+          </motion.section>
+        </main>
+      </ReducedMotionFallback>
       <Footer />
       <MobileBar />
     </>

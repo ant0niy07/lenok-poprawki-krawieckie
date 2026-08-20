@@ -2,6 +2,8 @@
 
 Production-ready React/Vite/TypeScript website for LenOK, ul. Ludwika Narbutta 11/2a, Warsaw Mokotów. Routes: `/pl`, `/en`, `/ru` and localized privacy pages. Output: `dist`.
 
+The visual layer uses a consolidated Motion architecture: a timed SVG atelier hero, scroll-linked continuous thread, transformable garment parts, reversible fabric fold, animated service stitches and a connected tailoring-process timeline. `prefers-reduced-motion` resolves all narrative paths and content to their completed static state.
+
 ## Commands
 
 ```bash
