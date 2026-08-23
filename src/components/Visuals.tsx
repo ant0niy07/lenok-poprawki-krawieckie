@@ -1,4 +1,4 @@
-import { type CSSProperties, type ReactNode, useRef } from "react";
+import { type CSSProperties, type ReactNode, useEffect, useRef, useState } from "react";
 import {
   AnimatePresence,
   motion,
@@ -256,26 +256,6 @@ export function AtelierHeroScene({ photoAlt = "" }: { photoAlt?: string }) {
             42 · FIT
           </text>
         </g>
-        <motion.path
-          data-testid="hero-red-thread"
-          className="red-thread"
-          d="M260 4 C250 90 287 120 260 164 C224 223 314 274 250 330 C211 364 264 401 206 455"
-          initial={{ pathLength: reduced ? 1 : 0 }}
-          animate={{ pathLength: 1 }}
-          transition={{ delay: 0.7, duration: 1.25, ease: "easeInOut" }}
-        />
-        <motion.g
-          initial={reduced ? false : { y: -95, opacity: 0 }}
-          animate={{ y: [0, 118, 170, 230], opacity: 1 }}
-          transition={{ delay: 0.7, duration: 0.9, times: [0, 0.42, 0.7, 1] }}
-        >
-          <AnimatedNeedle x={260} y={42} />
-        </motion.g>
-        <StitchPath
-          d="M165 428 Q260 452 360 428"
-          className="hero-stitches"
-          delay={1.25}
-        />
       </svg>
       <div className="scene-label">PATTERN · 01 / LENOK</div>
     </motion.div>
@@ -284,24 +264,34 @@ export function AtelierHeroScene({ photoAlt = "" }: { photoAlt?: string }) {
 
 export function ContinuousThread() {
   const reduced = useReducedMotion();
+  const [documentHeight, setDocumentHeight] = useState(1);
   const { scrollYProgress } = useScroll();
   const smooth = useSpring(scrollYProgress, {
     stiffness: 72,
     damping: 24,
     mass: 0.35,
   });
-  const length = useTransform(smooth, [0, 0.94], [0.055, 1]);
-  const endpoint = useTransform(smooth, [0, 1], [0, 840]);
+  const length = useTransform(smooth, [0, 0.85], [0.025, 1]);
+  const endpoint = useTransform(smooth, [0, 0.85], [0, 970]);
+  const endpointX = useTransform(smooth, [0, .29, .34, .64, .69, 1], [24, 24, 976, 976, 24, 24]);
+  const needleOpacity = useTransform(smooth, [0, .285, .295, .335, .345, .635, .645, .685, .695, 1], [1, 1, 0, 0, 1, 1, 0, 0, 1, 1]);
   const glowOffset = useTransform(smooth, [0, 1], [0, -64]);
   useMotionValueEvent(smooth, "change", () => {});
+  useEffect(() => {
+    const update = () => setDocumentHeight(document.documentElement.scrollHeight);
+    update();
+    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(update);
+    observer?.observe(document.documentElement);
+    window.addEventListener("resize", update);
+    return () => { observer?.disconnect(); window.removeEventListener("resize", update); };
+  }, []);
+  // Separate gutter subpaths let the narrative alternate sides without ever
+  // drawing a connecting stroke across photographs, copy or controls.
+  const desktopPath = "M24 0 C18 100 30 170 24 330 M976 330 C982 420 970 535 976 655 M24 655 C18 760 30 880 24 1000";
+  const mobilePath = "M18 0 C12 130 24 210 18 330 C12 470 24 600 18 740 C12 850 22 930 18 1000";
   return (
-    <svg
-      className="thread"
-      viewBox="0 0 100 900"
-      preserveAspectRatio="none"
-      aria-hidden="true"
-      data-testid="continuous-thread"
-    >
+    <div className="thread" style={{ height: documentHeight }} aria-hidden="true" data-testid="continuous-thread" data-observed-height={documentHeight}>
+    <svg className="thread-desktop" viewBox="0 0 1000 1000" preserveAspectRatio="none">
       <defs>
         <filter id="threadGlow">
           <feGaussianBlur stdDeviation="1.6" result="b" />
@@ -313,19 +303,24 @@ export function ContinuousThread() {
       </defs>
       <motion.path
         className="thread-track"
-        d="M70 0 C14 58 88 112 41 169 C10 208 84 256 28 329 C5 360 82 414 40 488 C18 528 78 566 25 649 C8 692 80 748 45 830 C40 850 56 875 65 900"
+        d={desktopPath}
         pathLength="1"
         style={{ pathLength: reduced ? 1 : length }}
       />
       <motion.path
         className="thread-highlight"
-        d="M70 0 C14 58 88 112 41 169 C10 208 84 256 28 329 C5 360 82 414 40 488 C18 528 78 566 25 649 C8 692 80 748 45 830 C40 850 56 875 65 900"
+        d={desktopPath}
         style={{ strokeDashoffset: glowOffset }}
       />
-      <motion.g className="thread-guide" style={{ y: endpoint }}>
+      <motion.g className="thread-guide" style={{ x: endpointX, y: endpoint, opacity: needleOpacity }}>
         <path d="M0-8L2 7L0 11L-2 7Z" />
       </motion.g>
     </svg>
+    <svg className="thread-mobile" viewBox="0 0 40 1000" preserveAspectRatio="none">
+      <motion.path className="thread-track" d={mobilePath} pathLength="1" style={{ pathLength: reduced ? 1 : length }} />
+      <motion.g className="thread-guide" style={{ x: 18, y: endpoint }}><path d="M0-8L2 7L0 11L-2 7Z" /></motion.g>
+    </svg>
+    </div>
   );
 }
 
@@ -478,23 +473,16 @@ export function MagneticActionButton({
   );
 }
 
-const processIcons = [
-  "M16 62Q50 34 84 62L75 86H25Z",
-  "M25 22V88M75 22V88M20 40H80",
-  "M18 30H82V80H18ZM30 47H70",
-  "M18 75Q50 40 82 75M30 53L50 73L72 42",
-  "M25 82Q50 95 75 82L68 28H32Z",
-];
 export function TailoringProcessTimeline({
   steps,
   note,
   title,
-  photoAlt,
+  photoAlts,
 }: {
   steps: string[];
   note: string;
   title: string;
-  photoAlt?: string;
+  photoAlts?: string[];
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const reduced = useReducedMotion();
@@ -535,27 +523,9 @@ export function TailoringProcessTimeline({
               whileHover={{ rotate: i % 2 ? 0.6 : -0.6, y: -3 }}
             >
               <div className="process-illustration">
-                {i < 3 && (
-                  <picture className="process-photo">
-                    <source srcSet={`/media/lenok/process-0${i + 1}.webp`} type="image/webp" />
-                    <img src={`/media/lenok/process-0${i + 1}.jpg`} width="1100" height="1280" loading="lazy" alt={photoAlt ? `${photoAlt} ${i + 1}` : ""} />
-                  </picture>
-                )}
-                <svg viewBox="0 0 100 105" aria-hidden="true">
-                  <motion.path
-                    d={processIcons[i]}
-                    initial={{ pathLength: 0 }}
-                    whileInView={{ pathLength: 1 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.7 }}
-                  />
-                  <motion.path
-                    className="process-garment"
-                    d={garmentPaths.dress}
-                    animate={{ scaleX: 1 - i * 0.025, scaleY: 1 - i * 0.018 }}
-                    style={{ transformOrigin: "50px 55px" }}
-                  />
-                </svg>
+                <picture className="process-photo">
+                  <img src={`/media/lenok/process/process-0${i + 1}.webp`} width="1200" height="900" loading="lazy" alt={photoAlts?.[i] ?? ""} />
+                </picture>
               </div>
               <span className="step-label">0{i + 1}</span>
               <h3>{step}</h3>

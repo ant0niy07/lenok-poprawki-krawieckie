@@ -11,6 +11,9 @@ const productionCopy = {
       title: "Cennik",
       intro: "Pełny cennik usług LenOK",
       dressNote: "Ostateczna wycena dopasowania po przymiarce.",
+      filtersLabel: "Filtruj kategorie cennika",
+      all: "Wszystkie",
+      choose: "Wybierz w kalkulatorze",
     },
     calc: {
       notice: "Ceny orientacyjne — ostateczna wycena następuje po przymiarce i ocenie tkaniny. Dodatkowe prace niewymienione w cenniku są płatne osobno. Tryb ekspresowy: dopłata 50–100% ceny usługi.",
@@ -21,6 +24,13 @@ const productionCopy = {
     },
     media: { aboutTitle: "Poznaj mistrzynię" },
     garments: { homeTextiles: "Szycie zasłon i pościeli" },
+    process: { imageAlts: ["Przekazanie sukienki mistrzyni krawieckiej", "Pomiar sukienki na manekinie", "Marynarka oznaczona kredą i szpilkami", "Mistrzyni LenOK pracująca przy maszynie", "Gotowa marynarka na manekinie"] },
+    premium: {
+      title: "Precyzja, którą widać w dopasowaniu",
+      text: "Każda poprawka zaczyna się od dokładnego pomiaru, oceny konstrukcji ubrania i wyboru właściwego sposobu wykończenia.",
+      stages: [{ title: "Pomiar", text: "Sprawdzamy proporcje i sposób, w jaki ubranie układa się na sylwetce." }, { title: "Konstrukcja", text: "Analizujemy szwy, zapasy, podszewkę i elementy wymagające korekty." }, { title: "Wykończenie", text: "Dobieramy technikę, która zachowuje charakter i jakość ubrania." }],
+      cta: "Wyceń poprawkę", photoAlt: "Detal precyzyjnej pracy krawieckiej LenOK", comparisonAlt: "Porównanie konstrukcji marynarki przed i po dopasowaniu", before: "Przed", after: "Po",
+    },
   },
   en: {
     nav: { priceList: "Price list" },
@@ -28,6 +38,9 @@ const productionCopy = {
       title: "Price list",
       intro: "Complete LenOK service price list",
       dressNote: "The final fitting quotation is confirmed after a fitting.",
+      filtersLabel: "Filter price-list categories",
+      all: "All",
+      choose: "Select in calculator",
     },
     calc: {
       notice: "Prices are indicative. The final quotation is confirmed after fitting and fabric assessment. Additional work not included in the price list is charged separately. Express service: a surcharge of 50–100% of the service price.",
@@ -38,6 +51,13 @@ const productionCopy = {
     },
     media: { aboutTitle: "Meet the tailoring master" },
     garments: { homeTextiles: "Curtain and bedding sewing" },
+    process: { imageAlts: ["A dress being handed to a tailoring master", "A dress measured on a dress form", "A jacket marked with chalk and pins", "LenOK master working at the sewing machine", "Finished blazer on a dress form"] },
+    premium: {
+      title: "Precision you can see in the fit",
+      text: "Every alteration begins with an exact measurement, an assessment of the garment’s construction and choosing the right finishing method.",
+      stages: [{ title: "Measurement", text: "We check proportions and how the garment sits on the body." }, { title: "Construction", text: "We assess seams, allowances, lining and the elements that need adjustment." }, { title: "Finishing", text: "We choose a technique that preserves the garment’s character and quality." }],
+      cta: "Estimate an alteration", photoAlt: "Detail of precise LenOK tailoring work", comparisonAlt: "Blazer construction before and after fitting", before: "Before", after: "After",
+    },
   },
   ru: {
     nav: { priceList: "Прайс-лист" },
@@ -45,6 +65,9 @@ const productionCopy = {
       title: "Прайс-лист",
       intro: "Полный прайс-лист услуг LenOK",
       dressNote: "Окончательная стоимость подгонки подтверждается после примерки.",
+      filtersLabel: "Фильтр категорий прайс-листа",
+      all: "Все",
+      choose: "Выбрать в калькуляторе",
     },
     calc: {
       notice: "Цены являются ориентировочными. Итоговая стоимость подтверждается после примерки и оценки ткани. Дополнительные работы, не указанные в прайс-листе, оплачиваются отдельно. Срочное выполнение: доплата 50–100% от стоимости услуги.",
@@ -55,6 +78,13 @@ const productionCopy = {
     },
     media: { aboutTitle: "Познакомьтесь с мастером" },
     garments: { homeTextiles: "Пошив штор и постельного белья" },
+    process: { imageAlts: ["Передача платья мастеру", "Измерение платья на манекене", "Пиджак с меловой разметкой и булавками", "Мастер LenOK работает за швейной машиной", "Готовый пиджак на манекене"] },
+    premium: {
+      title: "Точность, заметная в посадке",
+      text: "Каждая переделка начинается с точных измерений, оценки конструкции изделия и выбора подходящего способа обработки.",
+      stages: [{ title: "Измерение", text: "Проверяем пропорции и то, как изделие сидит на фигуре." }, { title: "Конструкция", text: "Оцениваем швы, припуски, подкладку и элементы, требующие корректировки." }, { title: "Отделка", text: "Выбираем технику, сохраняющую характер и качество изделия." }],
+      cta: "Рассчитать стоимость", photoAlt: "Деталь точной портновской работы LenOK", comparisonAlt: "Конструкция пиджака до и после подгонки", before: "До", after: "После",
+    },
   },
 };
 

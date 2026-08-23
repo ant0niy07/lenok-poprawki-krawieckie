@@ -181,14 +181,14 @@ function Hero() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 1.65, duration: 0.45 }}
         >
-          <a className="button" href="#calculator">
+          <a className="button thread-cta" href="#calculator">
             <MagneticActionButton className="button-inner">
               {t("hero.cta")}
               <ArrowRight />
             </MagneticActionButton>
           </a>
           <a
-            className="icon-link"
+            className="icon-link thread-cta"
             href={WA}
             target="_blank"
             rel="noopener noreferrer"
@@ -196,7 +196,7 @@ function Hero() {
             WhatsApp
           </a>
           <a
-            className="icon-link"
+            className="icon-link thread-cta"
             href={TG}
             target="_blank"
             rel="noopener noreferrer"
@@ -217,6 +217,12 @@ function Hero() {
 }
 function PriceList() {
   const { t, i18n } = useTranslation();
+  const [filter, setFilter] = useState<GarmentType | "all">("all");
+  const visibleGarments = filter === "all" ? garments : [filter];
+  const chooseCategory = (garment: GarmentType) => {
+    window.dispatchEvent(new CustomEvent<GarmentType>("lenok:choose-category", { detail: garment }));
+    document.getElementById("calculator")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
   return (
     <section className="price-list" id="price-list" aria-labelledby="price-list-title">
       <div className="section-head">
@@ -224,20 +230,33 @@ function PriceList() {
         <h2 id="price-list-title">{t("priceList.title")}</h2>
         <p>{t("priceList.intro")}</p>
       </div>
-      <div className="price-groups">
+      <div className="price-filters" role="tablist" aria-label={t("priceList.filtersLabel")}>
+        <button role="tab" aria-selected={filter === "all"} onClick={() => setFilter("all")}>{t("priceList.all")}</button>
         {garments.map((garment) => (
-          <MotionReveal className="price-group" key={garment}>
-            <h3>{t(`garments.${garment}`)}</h3>
-            <dl>
-              {getAvailableServices(garment).map((service) => (
-                <div key={service}>
-                  <dt>{t(`services.${service}`)}</dt>
-                  <dd>{getServiceDisplay(garment, service, i18n.language)}</dd>
-                </div>
-              ))}
-            </dl>
-            {garment === "dress" && <p className="price-note">{t("priceList.dressNote")}</p>}
-          </MotionReveal>
+          <button key={garment} role="tab" aria-selected={filter === garment} onClick={() => setFilter(garment)}>
+            {t(`garments.${garment}`)}
+          </button>
+        ))}
+      </div>
+      <div className="price-groups">
+        {visibleGarments.map((garment) => (
+          <details className="price-group" key={garment} open>
+            <summary><h3>{t(`garments.${garment}`)}</h3><span aria-hidden="true">+</span></summary>
+            <div className="price-group-content">
+              <dl>
+                {getAvailableServices(garment).map((service) => (
+                  <div key={service}>
+                    <dt>{t(`services.${service}`)}</dt>
+                    <dd>{getServiceDisplay(garment, service, i18n.language)}</dd>
+                  </div>
+                ))}
+              </dl>
+              {garment === "dress" && <p className="price-note">{t("priceList.dressNote")}</p>}
+              <button className="button price-cta thread-cta" type="button" onClick={() => chooseCategory(garment)}>
+                {t("priceList.choose")} <ArrowRight size={18} />
+              </button>
+            </div>
+          </details>
         ))}
       </div>
       <p className="price-notice">{t("calc.notice")}</p>
@@ -278,6 +297,11 @@ function Calculator() {
     setSelected(valid);
     setGarment(g);
   };
+  useEffect(() => {
+    const handleCategory = (event: Event) => selectGarment((event as CustomEvent<GarmentType>).detail);
+    window.addEventListener("lenok:choose-category", handleCategory);
+    return () => window.removeEventListener("lenok:choose-category", handleCategory);
+  });
   const toggle = (s: ServiceId) =>
     setSelected((c) => (c.includes(s) ? c.filter((x) => x !== s) : [...c, s]));
   const onSubmit = async (d: Form) => {
@@ -512,7 +536,7 @@ function Calculator() {
                 </label>
               </fieldset>
               <motion.button
-                className="button full"
+                className="button full thread-cta"
                 type="submit"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: selected.length ? 1 : 0.55, y: 0 }}
@@ -552,6 +576,41 @@ function Calculator() {
     </section>
   );
 }
+function PremiumAtelier() {
+  const { t } = useTranslation();
+  const stages = t("premium.stages", { returnObjects: true }) as Array<{ title: string; text: string }>;
+  return (
+    <section className="premium-atelier" id="services" aria-labelledby="premium-title">
+      <div className="premium-copy">
+        <p className="eyebrow">LENOK / PRECISION</p>
+        <MotionReveal>
+          <h2 id="premium-title">{t("premium.title")}</h2>
+          <p className="premium-lead">{t("premium.text")}</p>
+        </MotionReveal>
+        <div className="premium-stages">
+          {stages.map((stage, index) => (
+            <motion.article key={stage.title} initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.3 }} transition={{ delay: index * 0.08 }}>
+              <span>0{index + 1}</span><h3>{stage.title}</h3><p>{stage.text}</p>
+            </motion.article>
+          ))}
+        </div>
+        <a className="button thread-cta" href="#calculator">{t("premium.cta")} <ArrowRight /></a>
+      </div>
+      <div className="premium-visuals">
+        <picture className="premium-photo">
+          <source srcSet="/media/lenok/brand-detail.webp" type="image/webp" />
+          <img src="/media/lenok/brand-detail.jpg" width="1100" height="1100" loading="lazy" alt={t("premium.photoAlt")} />
+        </picture>
+        <div className="garment-comparison" aria-label={t("premium.comparisonAlt")}>
+          <div><span>{t("premium.before")}</span><GarmentVisualizer garment="blazer" /></div>
+          <motion.div initial={{ opacity: 0.45, x: 20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.7 }}>
+            <span>{t("premium.after")}</span><GarmentVisualizer garment="blazer" services={["blazerWaist", "blazerSleeves", "blazerLining"]} />
+          </motion.div>
+        </div>
+      </div>
+    </section>
+  );
+}
 function Home() {
   const { t } = useTranslation();
   const faqQ = t("faq.q", { returnObjects: true }) as string[],
@@ -569,38 +628,14 @@ function Home() {
           <Hero />
           <PriceList />
           <Calculator />
-          <FabricFoldTransition />
-          <section className="atelier" id="services">
-            <div className="atelier-chalk" aria-hidden="true">
-              <span />
-              <span />
-              <span />
-            </div>
-            <MotionReveal className="atelier-copy">
-              <p className="eyebrow">{t("atelier.kicker")}</p>
-              <h2>{t("atelier.title")}</h2>
-              <p>{t("atelier.text")}</p>
-            </MotionReveal>
-            <motion.div
-              className="atelier-mannequin"
-              whileInView={{ opacity: 1, y: 0 }}
-              initial={{ opacity: 0, y: 45 }}
-              transition={{ duration: 0.7 }}
-            >
-              <div className="mannequin-neck" />
-              <GarmentVisualizer
-                garment="blazer"
-            services={["blazerWaist", "blazerSleeves", "blazerLining"]}
-              />
-              <div className="mannequin-stand" />
-            </motion.div>
-          </section>
           <TailoringProcessTimeline
             steps={steps}
             note={t("process.note")}
             title={t("process.title")}
-            photoAlt={t("media.process")}
+            photoAlts={t("process.imageAlts", { returnObjects: true }) as string[]}
           />
+          <FabricFoldTransition />
+          <PremiumAtelier />
           <section className="real-media" aria-labelledby="about-master">
             <MotionReveal className="media-about">
               <picture>
@@ -680,10 +715,10 @@ function Home() {
                   <MapPin />
                   {t("contact.open")}
                 </a>
-                <a href={WA} target="_blank" rel="noopener noreferrer">
+                <a className="contact-thread-link thread-cta" href={WA} target="_blank" rel="noopener noreferrer">
                   WhatsApp
                 </a>
-                <a href={TG} target="_blank" rel="noopener noreferrer">
+                <a className="contact-thread-link thread-cta" href={TG} target="_blank" rel="noopener noreferrer">
                   Telegram
                 </a>
               </div>
