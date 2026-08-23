@@ -17,9 +17,9 @@ npm run build
 
 ## Launch blockers requiring owner approval
 
-- All calculator prices are temporary demonstration estimates and **must be approved or replaced by the LenOK owner before commercial launch**.
+- Calculator prices reproduce the official LenOK price list supplied on 21 August 2026. Ranges use their midpoint for the calculable subtotal, “from” prices use the stated minimum, and individual-quote work adds no invented amount.
 - Rating `4.9 ★ / 93 Google reviews` was supplied as project data; public search did not unambiguously identify this listing. Reconfirm it directly in Google Maps immediately before launch.
-- Code-native demo visuals require owner approval or replacement with approved LenOK media. See `public/media/lenok/ATTRIBUTION.md`.
+- The local photographs were supplied by LenOK and optimized without generative face or body editing. See `public/media/lenok/ATTRIBUTION.md`.
 - Complete privacy-controller identity, legal basis, retention periods and contact details must be supplied and legally reviewed before launch.
 - No opening hours, email, turnaround promise, payment methods, certification, awards or customer quotations are asserted.
 

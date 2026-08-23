@@ -26,13 +26,15 @@ import { AnimatePresence, motion } from "motion/react";
 import { toast } from "sonner";
 import {
   buildRequestMessage,
+  calculateExpressRange,
   calculateTotal,
-  estimatedPricing,
   formatPrice,
   garments,
   getAvailableServices,
+  getServiceCost,
+  getServiceDisplay,
   getServicePrice,
-  services,
+  getServiceUnit,
   type GarmentType,
   type ServiceId,
 } from "./data/estimatedPricing";
@@ -87,7 +89,6 @@ function LanguageSwitcher({ close }: { close?: () => void }) {
   const change = (lng: Lang) => {
     localStorage.setItem("lenok-language", lng);
     void i18n.changeLanguage(lng);
-    document.documentElement.lang = lng;
     const parts = loc.pathname.split("/");
     parts[1] = lng;
     nav(parts.join("/") || `/${lng}`);
@@ -128,6 +129,9 @@ function Header() {
       <nav className={open ? "open" : ""} aria-label="Main">
         <a onClick={() => setOpen(false)} href="#services">
           {t("nav.services")}
+        </a>
+        <a onClick={() => setOpen(false)} href="#price-list">
+          {t("nav.priceList")}
         </a>
         <a onClick={() => setOpen(false)} href="#process">
           {t("nav.process")}
@@ -207,7 +211,36 @@ function Hero() {
           <span>Mokotów</span>
         </div>
       </motion.div>
-      <AtelierHeroScene />
+      <AtelierHeroScene photoAlt={t("media.hero")} />
+    </section>
+  );
+}
+function PriceList() {
+  const { t, i18n } = useTranslation();
+  return (
+    <section className="price-list" id="price-list" aria-labelledby="price-list-title">
+      <div className="section-head">
+        <p className="eyebrow">LENOK / PLN</p>
+        <h2 id="price-list-title">{t("priceList.title")}</h2>
+        <p>{t("priceList.intro")}</p>
+      </div>
+      <div className="price-groups">
+        {garments.map((garment) => (
+          <MotionReveal className="price-group" key={garment}>
+            <h3>{t(`garments.${garment}`)}</h3>
+            <dl>
+              {getAvailableServices(garment).map((service) => (
+                <div key={service}>
+                  <dt>{t(`services.${service}`)}</dt>
+                  <dd>{getServiceDisplay(garment, service, i18n.language)}</dd>
+                </div>
+              ))}
+            </dl>
+            {garment === "dress" && <p className="price-note">{t("priceList.dressNote")}</p>}
+          </MotionReveal>
+        ))}
+      </div>
+      <p className="price-notice">{t("calc.notice")}</p>
     </section>
   );
 }
@@ -215,9 +248,13 @@ function Calculator() {
   const { t, i18n } = useTranslation();
   const [garment, setGarment] = useState<GarmentType | null>(null),
     [selected, setSelected] = useState<ServiceId[]>([]),
+    [quantities, setQuantities] = useState<Partial<Record<ServiceId, number>>>({}),
+    [express, setExpress] = useState(false),
     [manual, setManual] = useState("");
   const available = getAvailableServices(garment);
-  const total = calculateTotal(garment, selected);
+  const total = calculateTotal(garment, selected, quantities);
+  const expressRange = calculateExpressRange(total);
+  const hasIndividual = selected.some((s) => getServicePrice(garment, s) === null);
   const schema = z.object({
     name: z.string().min(2, t("calc.required")),
     phone: z.string().min(7, t("calc.invalidPhone")),
@@ -235,7 +272,8 @@ function Calculator() {
     defaultValues: { channel: "whatsapp" },
   });
   const selectGarment = (g: GarmentType) => {
-    const valid = selected.filter((s) => estimatedPricing[g][s] !== null);
+    const nextAvailable = getAvailableServices(g);
+    const valid = selected.filter((s) => nextAvailable.includes(s));
     if (valid.length !== selected.length) toast.info(t("services.removed"));
     setSelected(valid);
     setGarment(g);
@@ -252,9 +290,13 @@ function Calculator() {
       garment: t(`garments.${garment}`),
       items: selected.map((s) => ({
         name: t(`services.${s}`),
-        price: getServicePrice(garment, s),
+        display: getServiceDisplay(garment, s, i18n.language),
+        cost: getServiceCost(garment, s, quantities[s]),
+        quantity: quantities[s],
+        unit: getServiceUnit(garment, s),
       })),
       total,
+      express,
       date: d.date,
       name: d.name,
       phone: d.phone,
@@ -313,13 +355,11 @@ function Calculator() {
           <div>
             <h3>{t("services.title")}</h3>
             <div className="service-list">
-              {services.map((s) => {
-                const price = getServicePrice(garment, s),
-                  disabled = !available.includes(s);
+              {available.map((s) => {
                 return (
                   <AnimatedServiceCard
                     key={s}
-                    disabled={disabled}
+                    disabled={false}
                     onClick={() => toggle(s)}
                     selected={selected.includes(s)}
                   >
@@ -339,9 +379,7 @@ function Calculator() {
                     <span>
                       <strong>{t(`services.${s}`)}</strong>
                       <small>
-                        {price === null
-                          ? t("services.unavailable")
-                          : `${t("calc.from")} ${formatPrice(price, i18n.language)}`}
+                        {getServiceDisplay(garment, s, i18n.language)}
                       </small>
                     </span>
                   </AnimatedServiceCard>
@@ -365,13 +403,32 @@ function Calculator() {
                       exit={{ opacity: 0, x: -18, height: 0 }}
                       layout
                     >
-                      <span>{t(`services.${s}`)}</span>
+                      <span className="selected-service-name">
+                        {t(`services.${s}`)}
+                        <small>{getServiceDisplay(garment, s, i18n.language)}</small>
+                      </span>
                       <strong>
-                        {formatPrice(
-                          getServicePrice(garment, s) ?? 0,
-                          i18n.language,
-                        )}
+                        {getServicePrice(garment, s) === null
+                          ? t("calc.individual")
+                          : `${t("calc.calculated")}: ${formatPrice(getServiceCost(garment, s, quantities[s]), i18n.language)}`}
                       </strong>
+                      {getServiceUnit(garment, s) && (
+                        <label className="quantity">
+                          <span>{getServiceUnit(garment, s) === "hours" ? t("calc.hours") : t("calc.metres")}</span>
+                          <input
+                            type="number"
+                            min="0.5"
+                            step="0.5"
+                            value={quantities[s] ?? 1}
+                            onChange={(event) =>
+                              setQuantities((current) => ({
+                                ...current,
+                                [s]: Math.max(0.5, Number(event.target.value) || 1),
+                              }))
+                            }
+                          />
+                        </label>
+                      )}
                       <button
                         aria-label={`Remove ${t(`services.${s}`)}`}
                         onClick={() => toggle(s)}
@@ -384,17 +441,28 @@ function Calculator() {
               </motion.ul>
             )}
             <div className="total">
-              <span>{t("calc.total")}</span>
+              <span>{t("calc.subtotal")}</span>
               <motion.strong
                 key={total}
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 aria-live="polite"
               >
-                {t("calc.from")} {formatPrice(total, i18n.language)}
+                {formatPrice(total, i18n.language)}
               </motion.strong>
             </div>
-            <p className="disclaimer">{t("calc.disclaimer")}</p>
+            {hasIndividual && <p className="individual-note">{t("calc.individual")}</p>}
+            <label className="express-toggle">
+              <input type="checkbox" checked={express} onChange={(event) => setExpress(event.target.checked)} />
+              <span>{t("calc.express")}</span>
+            </label>
+            {express && total > 0 && (
+              <motion.div className="express-total" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} aria-live="polite">
+                <span>{t("calc.expressRange")}</span>
+                <strong>{formatPrice(expressRange.minimum, i18n.language)} – {formatPrice(expressRange.maximum, i18n.language)}</strong>
+              </motion.div>
+            )}
+            <p className="disclaimer">{t("calc.notice")}</p>
             <form onSubmit={handleSubmit(onSubmit)} noValidate>
               <label>
                 {t("calc.name")}
@@ -461,12 +529,20 @@ function Calculator() {
                 <button
                   className="button"
                   onClick={async () => {
-                    await navigator.clipboard.writeText(manual);
-                    toast.success(t("toast.copied"));
+                    try {
+                      await navigator.clipboard.writeText(manual);
+                      toast.success(t("toast.copied"));
+                    } catch {
+                      toast.error(t("toast.failed"));
+                    }
                   }}
                 >
                   <Copy />
-                  Copy
+                  {i18n.language === "pl"
+                    ? "Kopiuj"
+                    : i18n.language === "ru"
+                      ? "Копировать"
+                      : "Copy"}
                 </button>
               </div>
             )}
@@ -491,6 +567,7 @@ function Home() {
         <main id="main">
           <ContinuousThread />
           <Hero />
+          <PriceList />
           <Calculator />
           <FabricFoldTransition />
           <section className="atelier" id="services">
@@ -513,11 +590,7 @@ function Home() {
               <div className="mannequin-neck" />
               <GarmentVisualizer
                 garment="blazer"
-                services={[
-                  "waistAdjustment",
-                  "sleeveShortening",
-                  "liningReplacement",
-                ]}
+            services={["blazerWaist", "blazerSleeves", "blazerLining"]}
               />
               <div className="mannequin-stand" />
             </motion.div>
@@ -526,7 +599,29 @@ function Home() {
             steps={steps}
             note={t("process.note")}
             title={t("process.title")}
+            photoAlt={t("media.process")}
           />
+          <section className="real-media" aria-labelledby="about-master">
+            <MotionReveal className="media-about">
+              <picture>
+                <source srcSet="/media/lenok/about-photo.webp" type="image/webp" />
+                <img src="/media/lenok/about-photo.jpg" width="1400" height="933" loading="lazy" alt={t("media.portrait")} />
+              </picture>
+              <div>
+                <p className="eyebrow">LENOK / MOKOTÓW</p>
+                <h2 id="about-master">{t("media.aboutTitle")}</h2>
+                <p>{t("media.aboutText")}</p>
+              </div>
+            </MotionReveal>
+            <div className="editorial-gallery" aria-label={t("media.gallery")}>
+              {["gallery-01", "gallery-02", "gallery-03", "brand-detail"].map((name, index) => (
+                <motion.picture key={name} initial={{ opacity: 0, y: 22 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.2 }} transition={{ delay: index * 0.08 }}>
+                  <source srcSet={`/media/lenok/${name}.webp`} type="image/webp" />
+                  <img src={`/media/lenok/${name}.jpg`} width="1100" height={name === "brand-detail" ? 1100 : 1500} loading="lazy" alt={`${t("media.gallery")} ${index + 1}`} />
+                </motion.picture>
+              ))}
+            </div>
+          </section>
           <section className="second">
             <h2>{t("second.title")}</h2>
             <p>{t("second.text")}</p>

@@ -1,3 +1,5 @@
 # Media attribution
 
-All visual material is original, code-native SVG/CSS artwork created for this demo. No third-party photographs or client work are presented. Owner approval or replacement with approved LenOK photography is required before commercial launch.
+The photographs in this directory were supplied directly by the LenOK owner for this website update. They are stored locally and served as optimized JPEG/WebP variants. No price-list screenshot is used as gallery media and no face or body retouching was performed.
+
+Code-native SVG/CSS garment and tailoring artwork remains original to this project. No third-party stock photography is used.

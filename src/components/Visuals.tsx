@@ -18,6 +18,12 @@ const garmentPaths: Record<GarmentType, string> = {
     "M36 20 L21 38 L28 93 L47 93 L50 49 L53 93 L72 93 L79 38 L64 20 L54 32 L46 32 Z",
   jacket:
     "M34 20 L19 38 L27 93 L47 93 L50 48 L53 93 L73 93 L81 38 L66 20 L55 30 L45 30 Z",
+  skirts: "M38 25 Q50 20 62 25 L77 93 Q50 98 23 93 Z",
+  shirts: "M36 22 L18 39 L28 58 L36 50 L35 92 L65 92 L64 50 L72 58 L82 39 L64 22 L56 31 L44 31 Z",
+  leatherFur: "M33 19 L16 39 L25 94 L46 94 L50 48 L54 94 L75 94 L84 39 L67 19 L56 30 L44 30 Z",
+  formalwear: "M42 17 Q50 11 58 17 L62 35 L84 95 Q50 103 16 95 L38 35 Z",
+  homeTextiles: "M20 22 H80 V92 H20 Z",
+  other: "M27 24 H73 V90 H27 Z",
 };
 
 export function ReducedMotionFallback({ children }: { children: ReactNode }) {
@@ -98,10 +104,9 @@ export function GarmentMorph({
   services?: ServiceId[];
   label?: string;
 }) {
-  const narrow =
-    services.includes("narrowing") || services.includes("waistAdjustment");
-  const shorten = services.includes("shortening");
-  const sleeves = services.includes("sleeveShortening");
+  const narrow = services.some((s)=>["waistHipNarrowing","skirtWaist","shirtFit","dressFit","blazerWaist","formalFit"].includes(s));
+  const shorten = services.some((s)=>["trouserPlainHem","trouserOriginalHem","trouserCuffHem","leatherTrouserHem","skirtNarrowHem","skirtFlaredHem","blazerHem","formalHem"].includes(s));
+  const sleeves = services.some((s)=>["shirtSleeves","blazerSleeves","outerwearSleeves","leatherSleeves"].includes(s));
   return (
     <svg
       className="garment-svg"
@@ -161,10 +166,10 @@ export function GarmentMorph({
               <path className="guide active" d="M20 55L30 55M70 55L80 55" />
             </motion.g>
           )}
-          {services.includes("zipperReplacement") && (
+          {services.some((s)=>["trouserZipper","skirtZipper","outerwearZipper","sliderReplacement"].includes(s)) && (
             <StitchPath d="M50 32V79" className="zip zipper-teeth" />
           )}
-          {services.includes("liningReplacement") && (
+          {services.some((s)=>["blazerLining","furLining"].includes(s)) && (
             <motion.path
               d="M35 40 Q50 77 65 40 L60 82 Q50 88 40 82Z"
               fill={`url(#lining-${garment})`}
@@ -172,7 +177,7 @@ export function GarmentMorph({
               animate={{ opacity: 0.8, scale: 1 }}
             />
           )}
-          {services.includes("tearRepair") && (
+          {services.some((s)=>["pufferTearRepair","minorRepairs"].includes(s)) && (
             <StitchPath
               d="M60 57l-8 5 9 5-8 5 8 4"
               className="zip repair-stitch"
@@ -196,7 +201,7 @@ export function GarmentMorph({
 
 export const GarmentVisualizer = GarmentMorph;
 
-export function AtelierHeroScene() {
+export function AtelierHeroScene({ photoAlt = "" }: { photoAlt?: string }) {
   const reduced = useReducedMotion();
   const px = useMotionValue(0);
   const py = useMotionValue(0);
@@ -221,6 +226,10 @@ export function AtelierHeroScene() {
         } as CSSProperties
       }
     >
+      <picture className="hero-real-photo">
+        <source srcSet="/media/lenok/hero-photo.webp" type="image/webp" />
+        <img src="/media/lenok/hero-photo.jpg" width="1920" height="1446" alt={photoAlt} />
+      </picture>
       <motion.div
         className="fabric-surface"
         initial={{ opacity: reduced ? 1 : 0 }}
@@ -247,20 +256,6 @@ export function AtelierHeroScene() {
             42 · FIT
           </text>
         </g>
-        <motion.path
-          className="imperfect-pattern"
-          d="M190 108 Q255 60 322 112 L355 215 L415 444 Q275 487 125 438 L174 218Z"
-          initial={{ pathLength: reduced ? 1 : 0 }}
-          animate={{ pathLength: 1 }}
-          transition={{ delay: 0.7, duration: 0.9 }}
-        />
-        <motion.path
-          className="fitted-pattern"
-          d="M205 108 Q260 75 315 108 L338 205 L380 430 Q260 464 140 430 L182 205Z"
-          initial={{ pathLength: 0, opacity: 0 }}
-          animate={{ pathLength: 1, opacity: 1 }}
-          transition={{ delay: 1.25, duration: 0.9 }}
-        />
         <motion.path
           data-testid="hero-red-thread"
           className="red-thread"
@@ -494,10 +489,12 @@ export function TailoringProcessTimeline({
   steps,
   note,
   title,
+  photoAlt,
 }: {
   steps: string[];
   note: string;
   title: string;
+  photoAlt?: string;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const reduced = useReducedMotion();
@@ -538,6 +535,12 @@ export function TailoringProcessTimeline({
               whileHover={{ rotate: i % 2 ? 0.6 : -0.6, y: -3 }}
             >
               <div className="process-illustration">
+                {i < 3 && (
+                  <picture className="process-photo">
+                    <source srcSet={`/media/lenok/process-0${i + 1}.webp`} type="image/webp" />
+                    <img src={`/media/lenok/process-0${i + 1}.jpg`} width="1100" height="1280" loading="lazy" alt={photoAlt ? `${photoAlt} ${i + 1}` : ""} />
+                  </picture>
+                )}
                 <svg viewBox="0 0 100 105" aria-hidden="true">
                   <motion.path
                     d={processIcons[i]}
